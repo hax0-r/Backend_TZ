@@ -4,7 +4,7 @@ const cors = require("cors");
 const userModel = require("./Model/userSchema");
 const PORT = 5
 const app = express();
-const BASE_URL = `mongodb+srv://talha185133:StCKt4Fi5qk4T8h5@cluster0.nvzkt0f.mongodb.net/USER_DATA`
+const BASE_URL = `mongodb+srv://talha185133:StCKt4Fi5qk4T8h5@cluster0.nvzkt0f.mongodb.net/SIGN_UP`
 mongoose.connect(BASE_URL)
 
     .then((res) => console.log("Mongoose Connected"))
@@ -245,7 +245,7 @@ app.get("/api/user", (req, res) => {
 
 //     const {id} = req.params
 //     // console.log(query);
-    
+
 //     const findQuery = {
 //         _id:id
 //     }
@@ -272,11 +272,11 @@ app.get("/api/user", (req, res) => {
 
 app.get("/api/user/:id", (req, res) => {
 
-    const {id} = req.params
+    const { id } = req.params
     // console.log(query);
-    
+
     const findQuery = {
-        _id:id
+        _id: id
     }
     userModel.findById(findQuery)
         .then((response) => {
@@ -298,58 +298,138 @@ app.get("/api/user/:id", (req, res) => {
 
 // put is use to update specific data ({kiss ko update karna hai}findById,  {kiss say update karna hai} update)
 
-app.put("/api/user",(req,res)=>{
-    const {id,...updatedData}= req.body;
-    console.log(id ,"id");
+app.put("/api/user", (req, res) => {
+    const { id, ...updatedData } = req.body;
+    console.log(id, "id");
     // console.log(data ,"data");
-    userModel.findByIdAndUpdate(id,updatedData,{new:true}) // for updated data new true (optional)
-    .then((response) => {
-        console.log("response ", response);
-        res.json({
-            status: true,
-            message: "Data Added",
-            data: response
+    userModel.findByIdAndUpdate(id, updatedData, { new: true }) // for updated data new true (optional)
+        .then((response) => {
+            console.log("response ", response);
+            res.json({
+                status: true,
+                message: "Data Added",
+                data: response
+            })
         })
-    })
-    .catch((err) => {
-        res.json({
-            status: false,
-            message: "Internal Sserver Error",
+        .catch((err) => {
+            res.json({
+                status: false,
+                message: "Internal Sserver Error",
+            })
         })
-    })
 })
 
 
 // delete
 // findByIdAndDelete (only through id)
 
-app.delete("/api/user/:id",(req,res)=>{
-    const {id} = req.params
-    if(!id){
+app.delete("/api/user/:id", (req, res) => {
+    const { id } = req.params
+    if (!id) {
         res.json({
-            message:"ID is required"
+            message: "ID is required"
         })
         return
     }
 
     userModel.findByIdAndDelete(id)
-    .then((response) => {
-        console.log("response ", response);
-        res.json({
-            status: true,
-            message: "Data Deleted",
-            data: response
+        .then((response) => {
+            console.log("response ", response);
+            res.json({
+                status: true,
+                message: "Data Deleted",
+                data: response
+            })
         })
-    })
-    .catch((err) => {
-        res.json({
-            status: false,
-            message: "Internal Sserver Error",
+        .catch((err) => {
+            res.json({
+                status: false,
+                message: "Internal Sserver Error",
+            })
         })
-    })
 
 
 })
 
+// ================AUTHENTICATION SIGN UP===========
+
+app.post("/api/signup", (req, res) => {
+    const { name, email, password, phone } = req.body
+    if (!name || !email || !password || !phone) {
+        res.json({
+            Message: "Required fields are missing "
+        })
+        return
+    }
+
+    userModel.findOne({ email })
+        .then((user) => {
+            if (user) {
+                res.json({
+                    Message: "Email already use"
+                })
+            } else {
+                let objToSend = {
+                    name, email, password, phone
+                }
+
+                userModel.create(objToSend)
+                    .then((response) => {
+                        console.log("response ", response);
+                        res.json({
+                            status: true,
+                            message: `${response.name} welcome, you have register`,
+                        })
+                    })
+                    .catch((err) => {
+                        res.json({
+                            status: false,
+                            message: "Internal Sserver Error",
+                        })
+                    })
+            }
+        })
+        .catch((err) => {
+            console.log(err);
+        })
+})
+
+app.post("/api/login", (req, res) => {
+    const { email, password } = req.body;
+
+    console.log(email, password);
+    if (!email || !password) {
+        res.json({
+            Message: "Required fields are missing "
+        })
+        return
+    }
+
+    userModel.findOne({ email })
+        .then((user) => {
+            if (!user) {
+                res.json({
+                    Message: "Email not Found"
+                })
+            } else {
+                let ispassword = user.password
+                if (!ispassword) {
+                    res.json({
+                        Mesasge: "Incorrect Password"
+                    })
+                } else {
+                    res.json({
+                        Mesasge: `${user.name} login successfully`
+                    })
+                }
+            }
+        })
+        .catch((err) => {
+            console.log(err);
+        })
+
+
+
+})
 
 app.listen(PORT, () => console.log(`Your server is running on a localhost ${PORT}`))
